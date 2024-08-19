@@ -8,16 +8,16 @@ and traffic including DNS through the tor network.
 """
 
 
-from subprocess import call, check_call, CalledProcessError, getoutput
-from os.path import isfile, basename
-from os import devnull
-from sys import exit, stdout, stderr
-from atexit import register
 from argparse import ArgumentParser
+from atexit import register
 from json import load
-from urllib.request import urlopen
-from urllib.error import URLError
+from os import devnull
+from os.path import basename, isfile
+from subprocess import CalledProcessError, call, check_call, getoutput
+from sys import exit, stderr, stdout
 from time import sleep
+from urllib.error import URLError
+from urllib.request import urlopen
 
 
 class TorIptables:
@@ -28,7 +28,7 @@ class TorIptables:
     self.local_loopback = "127.0.0.1" # Local loopback
     self.non_tor_net = ["192.168.0.0/16", "172.16.0.0/12"]
     self.non_tor = ["127.0.0.0/9", "127.128.0.0/10", "127.0.0.0/8"]
-    self.tor_uid = getoutput("id -ur debian-tor")  # Tor user uid
+    self.tor_uid = getoutput("id -ur tor")  # Tor user uid
     self.trans_port = "9040"  # Tor port
     self.tor_config_file = '/etc/tor/torrc'
     self.torrc = r'''
@@ -54,7 +54,7 @@ DNSPort %s
       fnull = open(devnull, 'w')
       try:
         tor_restart = check_call(
-            ["service", "tor", "restart"],
+            ["systemctl", "restart", "tor.service"],
               stdout=fnull, stderr=fnull)
 
         if tor_restart == 0:
@@ -103,7 +103,7 @@ DNSPort %s
     while retries < 12 and not my_public_ip:
       retries += 1
       try:
-        my_public_ip = load(urlopen('https://check.torproject.org/api/ip'))['IP']
+        my_public_ip = load(urlopen('https://api.ipify.org'))
       except URLError:
         sleep(5)
         print(" [\033[93m?\033[0m] Still waiting for IP address...")
